@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./components/Login";
+import LandingPage from "./components/LandingPage";
 import PrivateRoute from "./routes/PrivateRoute";
 import RoleRoute from "./routes/RoleRoute";
 import { ROLES, RUTAS_POR_ROL } from "./utils/constants";
@@ -63,12 +64,13 @@ function RoleBasedRedirect() {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Ruta pública */}
+      {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />
+      <Route path="/" element={<LandingPage />} />
 
-      {/* Ruta raíz - redirige según el rol */}
+      {/* Ruta del dashboard - redirige según el rol */}
       <Route 
-        path="/" 
+        path="/dashboard" 
         element={
           <PrivateRoute>
             <RoleBasedRedirect />
