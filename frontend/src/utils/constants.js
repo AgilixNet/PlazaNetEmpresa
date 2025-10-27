@@ -113,7 +113,8 @@ export const NAVEGACION = {
     { nombre: 'Parqueadero', ruta: '/admin-parqueadero/vehiculos', icono: 'Car' }
   ],
   [ROLES.ADMIN_SOFTWARE]: [
-    { nombre: 'Dashboard', ruta: '/admin-software/dashboard', icono: 'LayoutDashboard' }
+    { nombre: 'Dashboard', ruta: '/admin-software/dashboard', icono: 'LayoutDashboard' },
+    { nombre: 'Solicitudes', ruta: '/admin-software/solicitudes', icono: 'FileText' }
   ],
   [ROLES.ARRENDADOR]: [
     { nombre: 'Dashboard', ruta: '/arrendador/dashboard', icono: 'LayoutDashboard' },

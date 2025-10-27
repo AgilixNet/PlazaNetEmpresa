@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // URL base de tu API
-const API_URL = 'http://localhost:5000/api/solicitudes';
+const API_URL = 'http://localhost:5000/api';
 
 // Crear una instancia de Axios
 const axiosClient = axios.create({
@@ -11,4 +11,4 @@ const axiosClient = axios.create({
   },
 });
 
-export default axiosClient;
+export { axiosClient };

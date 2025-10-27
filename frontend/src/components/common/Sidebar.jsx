@@ -93,10 +93,11 @@ export default function Sidebar() {
           <div className="mb-3 px-3">
             <p className="text-sm font-medium truncate">{perfil.nombre}</p>
             <p className="text-xs text-slate-400 truncate">
-              {perfil.rol === 'owner' && 'Propietario'}
-              {perfil.rol === 'admin_plaza' && 'Admin. Plaza'}
-              {perfil.rol === 'admin_parqueadero' && 'Admin. Parqueadero'}
-              {perfil.rol === 'arrendador' && 'Arrendador'}
+              {perfil.rol === 'Owner' && 'Propietario'}
+              {perfil.rol === 'AdminPlaza' && 'Admin. Plaza'}
+              {perfil.rol === 'AdminSoftware' && 'Admin. Software'}
+              {perfil.rol === 'ParkingAdmin' && 'Admin. Parqueadero'}
+              {perfil.rol === 'Arrendador' && 'Arrendador'}
             </p>
           </div>
         )}
