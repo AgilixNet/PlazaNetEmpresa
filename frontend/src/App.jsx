@@ -15,9 +15,6 @@ import OwnerPagos from "./pages/owner/OwnerPagos";
 import OwnerVehiculos from "./pages/owner/OwnerVehiculos";
 import OwnerReportes from "./pages/owner/OwnerReportes";
 
-// Admin Software Pages
-import AdminSoftwareSolicitudes from "./pages/admin-software/AdminSoftwareSolicitudes";
-
 // Componente de carga global
 function LoadingScreen() {
   return (
@@ -67,28 +64,16 @@ function RoleBasedRedirect() {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Rutas públicas - la ruta raíz debe ir primero */}
-      <Route path="/" element={<LandingPage />} />
+      {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />
-      
+      <Route path="/" element={<LandingPage />} />
+
       {/* Ruta del dashboard - redirige según el rol */}
       <Route 
         path="/dashboard" 
         element={
           <PrivateRoute>
             <RoleBasedRedirect />
-          </PrivateRoute>
-        } 
-      />
-
-      {/* Rutas del Admin Software */}
-      <Route 
-        path="/admin-software/solicitudes" 
-        element={
-          <PrivateRoute>
-            <RoleRoute rolesPermitidos={[ROLES.ADMIN_SOFTWARE]}>
-              <AdminSoftwareSolicitudes />
-            </RoleRoute>
           </PrivateRoute>
         } 
       />

@@ -3,15 +3,7 @@ export const ROLES = {
   OWNER: 'Owner',           // ✅ Con mayúscula
   ADMIN_PLAZA: 'AdminPlaza', // ❌ En BD dice "AdminPlaza" sin guión bajo
   ADMIN_PARQUEADERO: 'ParkingAdmin', // ❌ En BD dice "ParkingAdmin"
-  ARRENDADOR: 'Arrendador',  // ✅ Con mayúscula
-  ADMIN_SOFTWARE: 'AdminSoftware' // Nuevo rol para gestión de solicitudes
-};
-
-// Estados de solicitudes
-export const ESTADOS_SOLICITUD = {
-  PENDIENTE: 'pendiente',
-  APROBADA: 'aprobada',
-  RECHAZADA: 'rechazada'
+  ARRENDADOR: 'Arrendador'  // ✅ Con mayúscula
 };
 
 // Estados de locales
@@ -44,15 +36,6 @@ export const TIPOS_VEHICULO = {
 
 // Permisos por rol
 export const PERMISOS = {
-  [ROLES.ADMIN_SOFTWARE]: {
-    solicitudes: { ver: true, aprobar: true, rechazar: true, eliminar: true },
-    perfiles: { ver: false, crear: false, editar: false, eliminar: false },
-    locales: { ver: false, crear: false, editar: false, eliminar: false },
-    arriendos: { ver: false, crear: false, editar: false, eliminar: false },
-    pagos: { ver: false, crear: false, editar: false, eliminar: false },
-    vehiculos: { ver: false, crear: false, editar: false, eliminar: false },
-    reportes: false
-  },
   [ROLES.OWNER]: {
     perfiles: { ver: true, crear: true, editar: true, eliminar: true },
     locales: { ver: true, crear: true, editar: true, eliminar: true },
@@ -92,15 +75,11 @@ export const RUTAS_POR_ROL = {
   [ROLES.OWNER]: '/owner/dashboard',
   [ROLES.ADMIN_PLAZA]: '/admin-plaza/dashboard',
   [ROLES.ADMIN_PARQUEADERO]: '/admin-parqueadero/dashboard',
-  [ROLES.ARRENDADOR]: '/arrendador/dashboard',
-  [ROLES.ADMIN_SOFTWARE]: '/admin-software/solicitudes'
+  [ROLES.ARRENDADOR]: '/arrendador/dashboard'
 };
 
 // Navegación por rol
 export const NAVEGACION = {
-  [ROLES.ADMIN_SOFTWARE]: [
-    { nombre: 'Solicitudes', ruta: '/admin-software/solicitudes', icono: 'FileText' }
-  ],
   [ROLES.OWNER]: [
     { nombre: 'Dashboard', ruta: '/owner/dashboard', icono: 'LayoutDashboard' },
     { nombre: 'Usuarios', ruta: '/owner/usuarios', icono: 'Users' },

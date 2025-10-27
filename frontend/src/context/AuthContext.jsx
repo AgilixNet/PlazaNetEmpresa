@@ -223,7 +223,6 @@ export const AuthProvider = ({ children }) => {
     isAdminPlaza: perfil?.rol === 'AdminPlaza',
     isAdminParqueadero: perfil?.rol === 'ParkingAdmin',
     isArrendador: perfil?.rol === 'Arrendador',
-    isAdminSoftware: perfil?.rol === 'AdminSoftware',
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
