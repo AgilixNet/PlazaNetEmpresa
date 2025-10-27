@@ -169,9 +169,9 @@ export default function LandingPage() {
     let rutUrl = '';
 
     if (files.cedula) {
-      const cedulaFileName = `cedula/${nombreLimpio}-${telefonoLimpio}${files.cedula.name.substring(files.cedula.name.lastIndexOf('.'))}`;
+      const cedulaFileName = `${nombreLimpio}-${telefonoLimpio}${files.cedula.name.substring(files.cedula.name.lastIndexOf('.'))}`;
       const { data: cedulaData, error: cedulaError } = await supabase.storage
-        .from('solicitudes')
+        .from('cedula')
         .upload(cedulaFileName, files.cedula, {
           cacheControl: '3600',
           upsert: true
@@ -181,16 +181,16 @@ export default function LandingPage() {
       
       // Obtener la URL pública del archivo
       const { data: { publicUrl: cedulaPublicUrl } } = supabase.storage
-        .from('solicitudes')
+        .from('cedula')
         .getPublicUrl(cedulaFileName);
       
       cedulaUrl = cedulaPublicUrl;
     }
 
     if (files.rut) {
-      const rutFileName = `rut/${nombreLimpio}-${telefonoLimpio}${files.rut.name.substring(files.rut.name.lastIndexOf('.'))}`;
+      const rutFileName = `${nombreLimpio}-${telefonoLimpio}${files.rut.name.substring(files.rut.name.lastIndexOf('.'))}`;
       const { data: rutData, error: rutError } = await supabase.storage
-        .from('solicitudes')
+        .from('rut')
         .upload(rutFileName, files.rut, {
           cacheControl: '3600',
           upsert: true
@@ -200,7 +200,7 @@ export default function LandingPage() {
       
       // Obtener la URL pública del archivo
       const { data: { publicUrl: rutPublicUrl } } = supabase.storage
-        .from('solicitudes')
+        .from('rut')
         .getPublicUrl(rutFileName);
       
       rutUrl = rutPublicUrl;
