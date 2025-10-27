@@ -222,6 +222,7 @@ export const AuthProvider = ({ children }) => {
     isOwner: perfil?.rol === 'Owner',
     isAdminPlaza: perfil?.rol === 'AdminPlaza',
     isAdminParqueadero: perfil?.rol === 'ParkingAdmin',
+    isAdminSoftware: perfil?.rol === 'AdminSoftware',
     isArrendador: perfil?.rol === 'Arrendador',
   };
 

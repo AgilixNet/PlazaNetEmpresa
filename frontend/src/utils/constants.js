@@ -2,6 +2,7 @@
 export const ROLES = {
   OWNER: 'Owner',           // ✅ Con mayúscula
   ADMIN_PLAZA: 'AdminPlaza', // ❌ En BD dice "AdminPlaza" sin guión bajo
+  ADMIN_SOFTWARE: 'AdminSoftware', // Nuevo rol para el administrador de software
   ADMIN_PARQUEADERO: 'ParkingAdmin', // ❌ En BD dice "ParkingAdmin"
   ARRENDADOR: 'Arrendador'  // ✅ Con mayúscula
 };
@@ -60,6 +61,14 @@ export const PERMISOS = {
     vehiculos: { ver: true, crear: true, editar: true, eliminar: true },
     reportes: false
   },
+  [ROLES.ADMIN_SOFTWARE]: {
+    perfiles: { ver: true, crear: true, editar: true, eliminar: true },
+    locales: { ver: true, crear: false, editar: false, eliminar: false },
+    arriendos: { ver: true, crear: false, editar: false, eliminar: false },
+    pagos: { ver: true, crear: false, editar: false, eliminar: false },
+    vehiculos: { ver: true, crear: false, editar: false, eliminar: false },
+    reportes: true
+  },
   [ROLES.ARRENDADOR]: {
     perfiles: { ver: false, crear: false, editar: false, eliminar: false },
     locales: { ver: 'propios', crear: false, editar: false, eliminar: false },
@@ -74,6 +83,7 @@ export const PERMISOS = {
 export const RUTAS_POR_ROL = {
   [ROLES.OWNER]: '/owner/dashboard',
   [ROLES.ADMIN_PLAZA]: '/admin-plaza/dashboard',
+  [ROLES.ADMIN_SOFTWARE]: '/admin-software/dashboard',
   [ROLES.ADMIN_PARQUEADERO]: '/admin-parqueadero/dashboard',
   [ROLES.ARRENDADOR]: '/arrendador/dashboard'
 };
@@ -101,6 +111,9 @@ export const NAVEGACION = {
   [ROLES.ADMIN_PARQUEADERO]: [
     { nombre: 'Dashboard', ruta: '/admin-parqueadero/dashboard', icono: 'LayoutDashboard' },
     { nombre: 'Parqueadero', ruta: '/admin-parqueadero/vehiculos', icono: 'Car' }
+  ],
+  [ROLES.ADMIN_SOFTWARE]: [
+    { nombre: 'Dashboard', ruta: '/admin-software/dashboard', icono: 'LayoutDashboard' }
   ],
   [ROLES.ARRENDADOR]: [
     { nombre: 'Dashboard', ruta: '/arrendador/dashboard', icono: 'LayoutDashboard' },

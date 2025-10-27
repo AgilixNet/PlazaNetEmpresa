@@ -15,7 +15,8 @@ export default function Login() {
   useEffect(() => {
     if (user && perfil) {
       console.log('👤 Usuario ya autenticado, redirigiendo...');
-      navigate("/", { replace: true });
+      // Redirigir al punto central que luego reenvía al dashboard correcto según el rol
+      navigate("/dashboard", { replace: true });
     }
   }, [user, perfil, navigate]);
 
