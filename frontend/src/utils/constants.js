@@ -12,6 +12,7 @@ export const ESTADOS_SOLICITUD = {
   PENDIENTE: 'pendiente',
   APROBADA: 'aprobada',
   RECHAZADA: 'rechazada'
+<<<<<<< Updated upstream
 };
 
 export const PLAZAS = {
@@ -30,6 +31,8 @@ export const PLAZAS = {
     ciudad: 'Bogotá',
     ubicacion: 'Restrepo'
   }
+=======
+>>>>>>> Stashed changes
 };
 
 // Estados de locales
@@ -130,10 +133,13 @@ export const NAVEGACION = {
     { nombre: 'Parqueadero', ruta: '/admin-parqueadero/vehiculos', icono: 'Car' }
   ],
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   [ROLES.ADMIN_SOFTWARE]: [
     { nombre: 'Dashboard', ruta: '/admin-software/dashboard', icono: 'LayoutDashboard' },
     { nombre: 'Solicitudes', ruta: '/admin-software/solicitudes', icono: 'FileText' }
   ],
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
   [ROLES.ARRENDADOR]: [
