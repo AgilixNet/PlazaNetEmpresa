@@ -1,18 +1,10 @@
 // Roles del sistema - EXACTAMENTE como están en la BD
 export const ROLES = {
-  OWNER: 'Owner',
-  ADMIN_PLAZA: 'AdminPlaza',
-  PARKING_ADMIN: 'ParkingAdmin',
-  ARRENDADOR: 'Arrendador',
-  ADMIN_SOFTWARE: 'AdminSoftware'  // ✅ NUEVO
-};
-
-// Estados de solicitudes
-export const ESTADOS_SOLICITUD = {
-  PENDIENTE: 'pendiente',
-  APROBADA: 'aprobada',
-  RECHAZADA: 'rechazada'
-<<<<<<< Updated upstream
+  OWNER: 'Owner',           // ✅ Con mayúscula
+  ADMIN_PLAZA: 'AdminPlaza', // ❌ En BD dice "AdminPlaza" sin guión bajo
+  ADMIN_SOFTWARE: 'AdminSoftware', // Nuevo rol para el administrador de software
+  ADMIN_PARQUEADERO: 'ParkingAdmin', // ❌ En BD dice "ParkingAdmin"
+  ARRENDADOR: 'Arrendador'  // ✅ Con mayúscula
 };
 
 export const PLAZAS = {
@@ -31,8 +23,6 @@ export const PLAZAS = {
     ciudad: 'Bogotá',
     ubicacion: 'Restrepo'
   }
-=======
->>>>>>> Stashed changes
 };
 
 // Estados de locales
@@ -89,6 +79,14 @@ export const PERMISOS = {
     vehiculos: { ver: true, crear: true, editar: true, eliminar: true },
     reportes: false
   },
+  [ROLES.ADMIN_SOFTWARE]: {
+    perfiles: { ver: true, crear: true, editar: true, eliminar: true },
+    locales: { ver: true, crear: false, editar: false, eliminar: false },
+    arriendos: { ver: true, crear: false, editar: false, eliminar: false },
+    pagos: { ver: true, crear: false, editar: false, eliminar: false },
+    vehiculos: { ver: true, crear: false, editar: false, eliminar: false },
+    reportes: true
+  },
   [ROLES.ARRENDADOR]: {
     perfiles: { ver: false, crear: false, editar: false, eliminar: false },
     locales: { ver: 'propios', crear: false, editar: false, eliminar: false },
@@ -103,9 +101,9 @@ export const PERMISOS = {
 export const RUTAS_POR_ROL = {
   [ROLES.OWNER]: '/owner/dashboard',
   [ROLES.ADMIN_PLAZA]: '/admin-plaza/dashboard',
+  [ROLES.ADMIN_SOFTWARE]: '/admin-software/dashboard',
   [ROLES.ADMIN_PARQUEADERO]: '/admin-parqueadero/dashboard',
-  [ROLES.ARRENDADOR]: '/arrendador/dashboard',
-  [ROLES.ADMIN_SOFTWARE]: '/admin-software/dashboard'
+  [ROLES.ARRENDADOR]: '/arrendador/dashboard'
 };
 
 // Navegación por rol
@@ -132,16 +130,10 @@ export const NAVEGACION = {
     { nombre: 'Dashboard', ruta: '/admin-parqueadero/dashboard', icono: 'LayoutDashboard' },
     { nombre: 'Parqueadero', ruta: '/admin-parqueadero/vehiculos', icono: 'Car' }
   ],
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
   [ROLES.ADMIN_SOFTWARE]: [
     { nombre: 'Dashboard', ruta: '/admin-software/dashboard', icono: 'LayoutDashboard' },
     { nombre: 'Solicitudes', ruta: '/admin-software/solicitudes', icono: 'FileText' }
   ],
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   [ROLES.ARRENDADOR]: [
     { nombre: 'Dashboard', ruta: '/arrendador/dashboard', icono: 'LayoutDashboard' },
     { nombre: 'Mis Locales', ruta: '/arrendador/locales', icono: 'Store' },
