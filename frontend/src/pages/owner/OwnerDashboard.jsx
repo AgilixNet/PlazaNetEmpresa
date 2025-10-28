@@ -9,15 +9,16 @@ import { arrendamientosService } from "../../services/arrendamientosService";
 
 export default function OwnerDashboard() {
   const [stats, setStats] = useState({
-    locales: { total: 0, disponibles: 0, ocupados: 0, mantenimiento: 0 },
-    vehiculos: { activos: 0, carros: 0, motos: 0, ingresos_hoy: 0 },
-    pagos: { pendientes: 0, totalPendiente: 0, totalRecaudado: 0 },
-    usuarios: { total: 0, arrendadores: 0 },
-    arrendamientos: { activos: 0, ingresosMensuales: 0 }
+    locales: { total: 0, disponibles: 0, ocupados: 0, ingresoMensualPotencial: 0 },
+    vehiculos: { vehiculosActivos: 0, carros: 0, motos: 0, ingresos_hoy: 0 },
+    pagos: { pagosPendientes: 0, totalPendiente: 0, pagosRealizados: 0, totalRealizado: 0 },
+    usuarios: { total: 0, owners: 0, adminPlaza: 0, adminParqueadero: 0, arrendadores: 0, adminSoftware: 0 },
+    arrendamientos: { total: 0, activos: 0, ingresosMensuales: 0 }
   });
   const [loading, setLoading] = useState(true);
   const [pagosPendientes, setPagosPendientes] = useState([]);
   const [vehiculosActivos, setVehiculosActivos] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -26,7 +27,11 @@ export default function OwnerDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
+      console.log('📊 Iniciando carga del dashboard...');
+
+      // Cargar datos en paralelo
       const [
         localesStats,
         vehiculosStats,
@@ -36,14 +41,43 @@ export default function OwnerDashboard() {
         pagosPend,
         vehiculosAct
       ] = await Promise.all([
-        localesService.getEstadisticas(),
-        vehiculosService.getEstadisticas(),
-        pagosService.getEstadisticas(),
-        perfilesService.getEstadisticas(),
-        arrendamientosService.getEstadisticas(),
-        pagosService.getPendientes(),
-        vehiculosService.getActivos()
+        localesService.getEstadisticas().catch(e => {
+          console.error('Error en localesService:', e);
+          return { total: 0, disponibles: 0, ocupados: 0, ingresoMensualPotencial: 0 };
+        }),
+        vehiculosService.getEstadisticas().catch(e => {
+          console.error('Error en vehiculosService:', e);
+          return { vehiculosActivos: 0, carros: 0, motos: 0, ingresos_hoy: 0 };
+        }),
+        pagosService.getEstadisticas().catch(e => {
+          console.error('Error en pagosService:', e);
+          return { pagosPendientes: 0, totalPendiente: 0, pagosRealizados: 0, totalRealizado: 0 };
+        }),
+        perfilesService.getEstadisticas().catch(e => {
+          console.error('Error en perfilesService:', e);
+          return { total: 0, owners: 0, adminPlaza: 0, adminParqueadero: 0, arrendadores: 0, adminSoftware: 0 };
+        }),
+        arrendamientosService.getEstadisticas().catch(e => {
+          console.error('Error en arrendamientosService:', e);
+          return { total: 0, activos: 0, ingresosMensuales: 0 };
+        }),
+        pagosService.getPendientes().catch(e => {
+          console.error('Error en getPendientes:', e);
+          return [];
+        }),
+        vehiculosService.getActivos().catch(e => {
+          console.error('Error en getActivos:', e);
+          return [];
+        })
       ]);
+
+      console.log('✅ Datos cargados:', {
+        localesStats,
+        vehiculosStats,
+        pagosStats,
+        usuariosStats,
+        arrendamientosStats
+      });
 
       setStats({
         locales: localesStats,
@@ -53,10 +87,11 @@ export default function OwnerDashboard() {
         arrendamientos: arrendamientosStats
       });
 
-      setPagosPendientes(pagosPend.slice(0, 5));
-      setVehiculosActivos(vehiculosAct.slice(0, 5));
-    } catch (error) {
-      console.error("Error cargando datos:", error);
+      setPagosPendientes(pagosPend.slice(0, 5) || []);
+      setVehiculosActivos(vehiculosAct.slice(0, 5) || []);
+    } catch (err) {
+      console.error("❌ Error cargando datos:", err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -67,7 +102,7 @@ export default function OwnerDashboard() {
       style: 'currency',
       currency: 'COP',
       minimumFractionDigits: 0
-    }).format(value);
+    }).format(value || 0);
   };
 
   if (loading) {
@@ -77,6 +112,28 @@ export default function OwnerDashboard() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Cargando estadísticas...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout title="Dashboard">
+        <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg">
+          <div className="flex gap-3">
+            <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0" />
+            <div>
+              <h3 className="font-bold text-red-800">Error al cargar el dashboard</h3>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
+              <button
+                onClick={loadDashboardData}
+                className="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+              >
+                Reintentar
+              </button>
+            </div>
           </div>
         </div>
       </Layout>
@@ -109,7 +166,7 @@ export default function OwnerDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-purple-100 text-sm font-medium">Vehículos Activos</p>
-              <p className="text-4xl font-bold mt-1">{stats.vehiculos.activos}</p>
+              <p className="text-4xl font-bold mt-1">{stats.vehiculos.vehiculosActivos}</p>
             </div>
             <div className="bg-white bg-opacity-20 p-4 rounded-lg">
               <Car className="h-8 w-8" />
@@ -126,7 +183,9 @@ export default function OwnerDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-green-100 text-sm font-medium">Ingresos Mensuales</p>
-              <p className="text-2xl font-bold mt-1">{formatCurrency(stats.arrendamientos.ingresosMensuales)}</p>
+              <p className="text-2xl font-bold mt-1">
+                {formatCurrency(stats.arrendamientos.ingresosMensuales)}
+              </p>
             </div>
             <div className="bg-white bg-opacity-20 p-4 rounded-lg">
               <TrendingUp className="h-8 w-8" />
@@ -155,13 +214,13 @@ export default function OwnerDashboard() {
       </div>
 
       {/* Alertas de Pagos Pendientes */}
-      {stats.pagos.pendientes > 0 && (
+      {stats.pagos.pagosPendientes > 0 && (
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 rounded-lg">
           <div className="flex items-center">
             <AlertCircle className="h-6 w-6 text-yellow-600 mr-3" />
             <div>
               <p className="text-yellow-800 font-semibold">
-                Tienes {stats.pagos.pendientes} pagos pendientes
+                Tienes {stats.pagos.pagosPendientes} pagos pendientes
               </p>
               <p className="text-yellow-700 text-sm">
                 Total pendiente: {formatCurrency(stats.pagos.totalPendiente)}
@@ -189,14 +248,16 @@ export default function OwnerDashboard() {
                   <div key={pago.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
                     <div>
                       <p className="font-semibold text-gray-800">
-                        {pago.arrendamiento?.local?.nombre || 'Local'}
+                        Pago - Mes {pago.mes}/{pago.anio}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {pago.arrendamiento?.arrendador?.nombre || 'Arrendador'}
+                        Estado: {pago.estado}
                       </p>
-                      <p className="text-xs text-gray-500">
-                        Mes: {pago.mes}/{pago.anio}
-                      </p>
+                      {pago.arriendo && (
+                        <p className="text-xs text-gray-500">
+                          Local: {pago.arriendo?.local?.nombre || 'N/A'}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-red-600">{formatCurrency(pago.valor)}</p>

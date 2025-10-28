@@ -1,130 +1,215 @@
 import { useEffect, useState } from "react";
 import Layout from "../../components/common/Layout";
-import { Store, Plus, Edit, Trash2, Search } from "lucide-react";
+import { Home, Plus, Edit, Trash2, Search, AlertCircle } from "lucide-react";
 import { localesService } from "../../services/localesService";
-import { ESTADOS_LOCAL } from "../../utils/constants";
+import { perfilesService } from "../../services/perfilesService";
+import { useForm } from "../../hooks/useForm";
+import { useFetch } from "../../hooks/useFetch";
+import Modal from "../../components/common/Modal";
+import FormField from "../../components/common/FormField";
+import Table from "../../components/common/Table";
 
 export default function OwnerLocales() {
-  const [locales, setLocales] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState("todos");
   const [showModal, setShowModal] = useState(false);
-  const [editingLocal, setEditingLocal] = useState(null);
-  const [formData, setFormData] = useState({
-    nombre: "",
-    ubicacion: "",
-    precio_mensual: "",
-    estado: ESTADOS_LOCAL.DISPONIBLE
-  });
+  const [modalType, setModalType] = useState("create"); // create, edit, delete
+  const [selectedLocal, setSelectedLocal] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [stats, setStats] = useState(null);
 
+  // Fetch de locales
+  const { data: locales, loading: loadingLocales, refetch: refetchLocales } = useFetch(
+    () => localesService.getAll(),
+    []
+  );
+
+  // Fetch de arrendadores para el select
+  const { data: arrendadores } = useFetch(
+    () => perfilesService.getArrendadores(),
+    []
+  );
+
+  // Obtener estadísticas
   useEffect(() => {
-    loadLocales();
-  }, []);
-
-  const loadLocales = async () => {
-    try {
-      setLoading(true);
-      const data = await localesService.getWithArrendatario();
-      setLocales(data);
-    } catch (error) {
-      console.error("Error cargando locales:", error);
-      alert("Error al cargar locales");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingLocal) {
-        await localesService.update(editingLocal.id, formData);
-        alert("Local actualizado correctamente");
-      } else {
-        await localesService.create(formData);
-        alert("Local creado correctamente");
+    const loadStats = async () => {
+      try {
+        const data = await localesService.getEstadisticas();
+        setStats(data);
+      } catch (error) {
+        console.error("Error cargando estadísticas:", error);
       }
-      
-      setShowModal(false);
-      resetForm();
-      loadLocales();
-    } catch (error) {
-      console.error("Error guardando local:", error);
-      alert("Error al guardar local: " + error.message);
+    };
+    loadStats();
+  }, [locales]);
+
+  // Hook de formulario
+  const form = useForm(
+    {
+      nombre: "",
+      ubicacion: "",
+      estado: "disponible",
+      precio_mensu: "",
+      arrendador_id: ""
+    },
+    async (data) => {
+      try {
+        if (modalType === "create") {
+          await localesService.create({
+            ...data,
+            precio_mensu: parseFloat(data.precio_mensu)
+          });
+        } else if (modalType === "edit") {
+          await localesService.update(selectedLocal.id, {
+            ...data,
+            precio_mensu: parseFloat(data.precio_mensu)
+          });
+        }
+        
+        alert(
+          modalType === "create"
+            ? "Local creado exitosamente"
+            : "Local actualizado exitosamente"
+        );
+        
+        setShowModal(false);
+        form.resetForm();
+        setSelectedLocal(null);
+        refetchLocales();
+      } catch (error) {
+        alert("Error: " + error.message);
+      }
     }
+  );
+
+  const handleCreate = () => {
+    setModalType("create");
+    setSelectedLocal(null);
+    form.resetForm();
+    setShowModal(true);
   };
 
   const handleEdit = (local) => {
-    setEditingLocal(local);
-    setFormData({
+    setModalType("edit");
+    setSelectedLocal(local);
+    form.setFormData({
       nombre: local.nombre,
       ubicacion: local.ubicacion,
-      precio_mensual: local.precio_mensual,
-      estado: local.estado
+      estado: local.estado,
+      precio_mensu: local.precio_mensu,
+      arrendador_id: local.arrendador_id || ""
     });
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("¿Estás seguro de eliminar este local?")) return;
-    
+  const handleDeleteClick = (local) => {
+    setSelectedLocal(local);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDelete = async () => {
     try {
-      await localesService.delete(id);
-      alert("Local eliminado correctamente");
-      loadLocales();
+      await localesService.delete(selectedLocal.id);
+      alert("Local eliminado exitosamente");
+      setShowDeleteConfirm(false);
+      setSelectedLocal(null);
+      refetchLocales();
     } catch (error) {
-      console.error("Error eliminando local:", error);
-      alert("Error al eliminar local");
+      alert("Error: " + error.message);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      nombre: "",
-      ubicacion: "",
-      precio_mensual: "",
-      estado: ESTADOS_LOCAL.DISPONIBLE
-    });
-    setEditingLocal(null);
+  const closeModal = () => {
+    setShowModal(false);
+    form.resetForm();
+    setSelectedLocal(null);
   };
 
-  const filteredLocales = locales.filter(local => {
-    const matchSearch = local.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       local.ubicacion?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchEstado = filtroEstado === "todos" || local.estado === filtroEstado;
-    return matchSearch && matchEstado;
-  });
+  // Columnas de la tabla
+  const columns = [
+    {
+      key: "nombre",
+      label: "Nombre",
+      sortable: true,
+      searchable: true
+    },
+    {
+      key: "ubicacion",
+      label: "Ubicación",
+      sortable: true,
+      searchable: true
+    },
+    {
+      key: "estado",
+      label: "Estado",
+      sortable: true,
+      render: (value) => (
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+          value === "disponible"
+            ? "bg-green-100 text-green-800"
+            : "bg-blue-100 text-blue-800"
+        }`}>
+          {value === "disponible" ? "Disponible" : "Ocupado"}
+        </span>
+      )
+    },
+    {
+      key: "precio_mensu",
+      label: "Precio Mensual",
+      type: "currency",
+      sortable: true,
+      render: (value) => new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0
+      }).format(value || 0)
+    }
+  ];
 
-  const getEstadoBadgeColor = (estado) => {
-    const colors = {
-      [ESTADOS_LOCAL.DISPONIBLE]: "bg-green-100 text-green-800 border-green-200",
-      [ESTADOS_LOCAL.OCUPADO]: "bg-red-100 text-red-800 border-red-200",
-      [ESTADOS_LOCAL.MANTENIMIENTO]: "bg-yellow-100 text-yellow-800 border-yellow-200"
-    };
-    return colors[estado] || "bg-gray-100 text-gray-800 border-gray-200";
-  };
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(value);
-  };
-
-  if (loading) {
-    return (
-      <Layout title="Gestión de Locales">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
-        </div>
-      </Layout>
-    );
-  }
+  const renderActions = (local) => (
+    <>
+      <button
+        onClick={() => handleEdit(local)}
+        className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition text-sm"
+      >
+        <Edit className="h-4 w-4" />
+        Editar
+      </button>
+      <button
+        onClick={() => handleDeleteClick(local)}
+        className="flex items-center gap-2 px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition text-sm"
+      >
+        <Trash2 className="h-4 w-4" />
+        Eliminar
+      </button>
+    </>
+  );
 
   return (
     <Layout title="Gestión de Locales">
+      {/* Stats */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+            <p className="text-blue-100 text-sm font-medium">Total Locales</p>
+            <p className="text-4xl font-bold mt-2">{stats.total}</p>
+          </div>
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+            <p className="text-green-100 text-sm font-medium">Disponibles</p>
+            <p className="text-4xl font-bold mt-2">{stats.disponibles}</p>
+          </div>
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+            <p className="text-purple-100 text-sm font-medium">Ocupados</p>
+            <p className="text-4xl font-bold mt-2">{stats.ocupados}</p>
+          </div>
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+            <p className="text-orange-100 text-sm font-medium">Ingreso Mensual</p>
+            <p className="text-2xl font-bold mt-2">
+              ${(stats.ingresoMensualPotencial / 1000000).toFixed(1)}M
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -140,183 +225,164 @@ export default function OwnerLocales() {
               />
             </div>
           </div>
-          
-          <div className="flex gap-3 w-full md:w-auto">
-            <select
-              value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="todos">Todos</option>
-              <option value={ESTADOS_LOCAL.DISPONIBLE}>Disponible</option>
-              <option value={ESTADOS_LOCAL.OCUPADO}>Ocupado</option>
-              <option value={ESTADOS_LOCAL.MANTENIMIENTO}>Mantenimiento</option>
-            </select>
 
-            <button
-              onClick={() => {
-                resetForm();
-                setShowModal(true);
-              }}
-              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              <Plus className="h-5 w-5" />
-              Nuevo Local
-            </button>
-          </div>
+          <button
+            onClick={handleCreate}
+            className="flex items-center gap-2 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition whitespace-nowrap"
+          >
+            <Plus className="h-5 w-5" />
+            Nuevo Local
+          </button>
         </div>
       </div>
 
-      {/* Grid de Locales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredLocales.map((local) => (
-          <div key={local.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
-            <div className={`h-2 ${local.estado === ESTADOS_LOCAL.DISPONIBLE ? 'bg-green-500' : local.estado === ESTADOS_LOCAL.OCUPADO ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
-            
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <div className="bg-blue-100 p-3 rounded-lg mr-3">
-                    <Store className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-800">{local.nombre}</h3>
-                    <p className="text-sm text-gray-600">{local.ubicacion}</p>
-                  </div>
-                </div>
-              </div>
+      {/* Tabla */}
+      <Table
+        columns={columns}
+        data={locales || []}
+        loading={loadingLocales}
+        emptyMessage="No hay locales registrados"
+        emptyIcon={Home}
+        searchTerm={searchTerm}
+        actions={renderActions}
+      />
 
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Precio mensual:</span>
-                  <span className="font-bold text-gray-800">{formatCurrency(local.precio_mensual)}</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Estado:</span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getEstadoBadgeColor(local.estado)}`}>
-                    {local.estado}
-                  </span>
-                </div>
+      {/* Modal Crear/Editar */}
+      <Modal
+        isOpen={showModal}
+        onClose={closeModal}
+        title={modalType === "create" ? "Crear Nuevo Local" : "Editar Local"}
+        size="lg"
+        footer={
+          <>
+            <button
+              onClick={closeModal}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={form.handleSubmit}
+              disabled={form.loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+            >
+              {form.loading ? "Guardando..." : "Guardar"}
+            </button>
+          </>
+        }
+      >
+        <form className="space-y-4">
+          <FormField
+            label="Nombre del Local"
+            name="nombre"
+            value={form.formData.nombre}
+            onChange={form.handleChange}
+            onBlur={form.handleBlur}
+            error={form.errors.nombre}
+            touched={form.touched.nombre}
+            placeholder="Ej: Local 101"
+            required
+          />
 
-                {local.arriendos && local.arriendos.length > 0 && local.arriendos[0].perfiles && (
-                  <div className="pt-3 border-t border-gray-200">
-                    <p className="text-xs text-gray-500">Arrendado por:</p>
-                    <p className="text-sm font-semibold text-gray-800">{local.arriendos[0].perfiles.nombre}</p>
-                  </div>
-                )}
-              </div>
+          <FormField
+            label="Ubicación"
+            name="ubicacion"
+            value={form.formData.ubicacion}
+            onChange={form.handleChange}
+            onBlur={form.handleBlur}
+            error={form.errors.ubicacion}
+            touched={form.touched.ubicacion}
+            placeholder="Ej: Piso 1, Puerta A"
+            required
+          />
 
-              <div className="flex gap-2 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => handleEdit(local)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"
-                >
-                  <Edit className="h-4 w-4" />
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(local.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Eliminar
-                </button>
-              </div>
+          <FormField
+            label="Precio Mensual"
+            name="precio_mensu"
+            type="number"
+            value={form.formData.precio_mensu}
+            onChange={form.handleChange}
+            onBlur={form.handleBlur}
+            error={form.errors.precio_mensu}
+            touched={form.touched.precio_mensu}
+            placeholder="Ej: 500000"
+            required
+          />
+
+          <FormField
+            label="Estado"
+            name="estado"
+            type="select"
+            value={form.formData.estado}
+            onChange={form.handleChange}
+            onBlur={form.handleBlur}
+            options={[
+              { value: "disponible", label: "Disponible" },
+              { value: "ocupado", label: "Ocupado" }
+            ]}
+            required
+          />
+
+          {form.formData.estado === "ocupado" && (
+            <FormField
+              label="Asignar Arrendador"
+              name="arrendador_id"
+              type="select"
+              value={form.formData.arrendador_id}
+              onChange={form.handleChange}
+              onBlur={form.handleBlur}
+              options={[
+                { value: "", label: "Sin asignar" },
+                ...(arrendadores || []).map(a => ({
+                  value: a.id,
+                  label: a.nombre
+                }))
+              ]}
+            />
+          )}
+        </form>
+      </Modal>
+
+      {/* Modal Confirmar Eliminación */}
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Confirmar Eliminación"
+        size="sm"
+        footer={
+          <>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleDelete}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+            >
+              Eliminar
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex gap-3 items-start">
+            <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-gray-800">
+                ¿Estás seguro de que quieres eliminar este local?
+              </p>
+              <p className="text-gray-600 text-sm mt-1">
+                Local: <strong>{selectedLocal?.nombre}</strong>
+              </p>
+              <p className="text-gray-600 text-sm">
+                Esta acción no se puede deshacer.
+              </p>
             </div>
           </div>
-        ))}
-      </div>
-
-      {filteredLocales.length === 0 && (
-        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-          <Store className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg">No se encontraron locales</p>
         </div>
-      )}
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">
-              {editingLocal ? "Editar Local" : "Nuevo Local"}
-            </h3>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
-                <input
-                  type="text"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                  required
-                  placeholder="Ej: Local 101"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Ubicación</label>
-                <input
-                  type="text"
-                  value={formData.ubicacion}
-                  onChange={(e) => setFormData({...formData, ubicacion: e.target.value})}
-                  required
-                  placeholder="Ej: Piso 1, Sector A"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Precio Mensual</label>
-                <input
-                  type="number"
-                  value={formData.precio_mensual}
-                  onChange={(e) => setFormData({...formData, precio_mensual: e.target.value})}
-                  required
-                  min="0"
-                  placeholder="500000"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-                <select
-                  value={formData.estado}
-                  onChange={(e) => setFormData({...formData, estado: e.target.value})}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value={ESTADOS_LOCAL.DISPONIBLE}>Disponible</option>
-                  <option value={ESTADOS_LOCAL.OCUPADO}>Ocupado</option>
-                  <option value={ESTADOS_LOCAL.MANTENIMIENTO}>Mantenimiento</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    resetForm();
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  {editingLocal ? "Actualizar" : "Crear"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      </Modal>
     </Layout>
   );
 }

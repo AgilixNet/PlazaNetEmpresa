@@ -1,5 +1,4 @@
 import { supabase } from '../supabaseClient';
-import { ROLES } from '../utils/constants';
 
 export const perfilesService = {
   // Obtener todos los perfiles
@@ -7,10 +6,10 @@ export const perfilesService = {
     const { data, error } = await supabase
       .from('perfiles')
       .select('*')
-      .order('nombre', { ascending: true });
+      .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
   // Obtener perfil por ID
@@ -26,7 +25,7 @@ export const perfilesService = {
   },
 
   // Obtener perfiles por rol
-  async getByRol(rol) {
+  async getPorRol(rol) {
     const { data, error } = await supabase
       .from('perfiles')
       .select('*')
@@ -34,27 +33,34 @@ export const perfilesService = {
       .order('nombre', { ascending: true });
     
     if (error) throw error;
-    return data;
-  },
-
-  // Obtener todos excepto owners (para AdminPlaza)
-  async getAllExceptOwner() {
-    const { data, error } = await supabase
-      .from('perfiles')
-      .select('*')
-      .neq('rol', ROLES.OWNER)
-      .order('nombre', { ascending: true });
-    
-    if (error) throw error;
-    return data;
+    return data || [];
   },
 
   // Obtener arrendadores
   async getArrendadores() {
-    return this.getByRol(ROLES.ARRENDADOR);
+    const { data, error } = await supabase
+      .from('perfiles')
+      .select('*')
+      .eq('rol', 'Arrendador')
+      .order('nombre', { ascending: true });
+    
+    if (error) throw error;
+    return data || [];
   },
 
-  // Crear perfil
+  // Buscar perfiles
+  async buscar(termino) {
+    const { data, error } = await supabase
+      .from('perfiles')
+      .select('*')
+      .or(`nombre.ilike.%${termino}%,correo.ilike.%${termino}%`)
+      .order('nombre', { ascending: true });
+    
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Crear perfil (después de que Supabase Auth cree el usuario)
   async create(perfilData) {
     const { data, error } = await supabase
       .from('perfiles')
@@ -93,27 +99,34 @@ export const perfilesService = {
     return true;
   },
 
-  // Validar si puede editar un perfil (AdminPlaza no puede editar Owner)
-  canEdit(editorRol, targetRol) {
-    if (editorRol === ROLES.OWNER) return true;
-    if (editorRol === ROLES.ADMIN_PLAZA && targetRol !== ROLES.OWNER) return true;
-    return false;
+  // Cambiar rol de un usuario
+  async cambiarRol(id, nuevoRol) {
+    const { data, error } = await supabase
+      .from('perfiles')
+      .update({ rol: nuevoRol })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
   },
 
   // Obtener estadísticas de usuarios
   async getEstadisticas() {
-    const { data: todos, error } = await supabase
+    const { data: todos, error: errorTodos } = await supabase
       .from('perfiles')
       .select('rol');
     
-    if (error) throw error;
+    if (errorTodos) throw errorTodos;
 
     const stats = {
-      total: todos.length,
-      owners: todos.filter(p => p.rol === ROLES.OWNER).length,
-      adminPlaza: todos.filter(p => p.rol === ROLES.ADMIN_PLAZA).length,
-      adminParqueadero: todos.filter(p => p.rol === ROLES.ADMIN_PARQUEADERO).length,
-      arrendadores: todos.filter(p => p.rol === ROLES.ARRENDADOR).length
+      total: todos?.length || 0,
+      owners: todos?.filter(p => p.rol === 'Owner').length || 0,
+      adminPlaza: todos?.filter(p => p.rol === 'AdminPlaza').length || 0,
+      adminParqueadero: todos?.filter(p => p.rol === 'ParkingAdmin').length || 0,
+      arrendadores: todos?.filter(p => p.rol === 'Arrendador').length || 0,
+      adminSoftware: todos?.filter(p => p.rol === 'AdminSoftware').length || 0
     };
 
     return stats;
