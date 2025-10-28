@@ -7,6 +7,24 @@ export const ROLES = {
   ARRENDADOR: 'Arrendador'  // ✅ Con mayúscula
 };
 
+export const PLAZAS = {
+  PALOQUEMAO: {
+    nombre: 'Paloquemao',
+    ciudad: 'Bogotá',
+    ubicacion: 'Centro'
+  },
+  SIETE_AGOSTO: {
+    nombre: '7 de Agosto',
+    ciudad: 'Bogotá',
+    ubicacion: 'Chapinero'
+  },
+  RESTREPO: {
+    nombre: 'Restrepo',
+    ciudad: 'Bogotá',
+    ubicacion: 'Restrepo'
+  }
+};
+
 // Estados de locales
 export const ESTADOS_LOCAL = {
   DISPONIBLE: 'disponible',
