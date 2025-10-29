@@ -2,52 +2,95 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Building2, Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
+import { supabase } from "../supabaseClient";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [plazaId, setPlazaId] = useState(""); // ✅ NUEVO
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [plazas, setPlazas] = useState([]); // ✅ NUEVO
+  const [loadingPlazas, setLoadingPlazas] = useState(true); // ✅ NUEVO
   const navigate = useNavigate();
   const { signIn, user, perfil } = useAuth();
+
+  // ✅ NUEVO: Cargar plazas desde la BD al montar el componente
+  useEffect(() => {
+    cargarPlazas();
+  }, []);
+
+  const cargarPlazas = async () => {
+    try {
+      console.log("📍 Cargando plazas desde BD...");
+      const { data, error } = await supabase
+        .from("plazas")
+        .select("id, nombre, ciudad")
+        .eq("estado", "activa")
+        .order("nombre", { ascending: true });
+
+      if (error) {
+        console.error("❌ Error cargando plazas:", error);
+        setError("Error al cargar las plazas disponibles");
+        return;
+      }
+
+      console.log("✅ Plazas cargadas:", data);
+      setPlazas(data || []);
+    } catch (err) {
+      console.error("❌ Exception al cargar plazas:", err);
+      setError("Error al conectar con el servidor");
+    } finally {
+      setLoadingPlazas(false);
+    }
+  };
 
   // Si ya hay un usuario autenticado y perfil cargado, redirigir al dashboard
   useEffect(() => {
     if (user && perfil) {
-      console.log('👤 Usuario ya autenticado, redirigiendo...');
-      // Redirigir al punto central que luego reenvía al dashboard correcto según el rol
+      console.log("👤 Usuario ya autenticado, redirigiendo...");
       navigate("/dashboard", { replace: true });
     }
   }, [user, perfil, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    
+
     if (loading) return;
-    
+
+    // ✅ NUEVO: Validar que plaza esté seleccionada
+    if (!plazaId) {
+      setError("Por favor selecciona una plaza");
+      return;
+    }
+
     setError("");
     setLoading(true);
-    
+
     // Timeout de seguridad (10 segundos)
     const timeoutId = setTimeout(() => {
-      setError("El inicio de sesión está tardando demasiado. Por favor, intenta de nuevo.");
+      setError(
+        "El inicio de sesión está tardando demasiado. Por favor, intenta de nuevo."
+      );
       setLoading(false);
     }, 10000);
 
     try {
-      console.log('🔐 Starting login process...');
-      
-      await signIn(email, password);
-      
-      console.log('✅ Login successful, waiting for redirect...');
+      console.log("🔐 Starting login process...");
+
+      // ✅ NUEVO: Pasar plaza_id a signIn
+      await signIn(email, password, plazaId);
+
+      console.log("✅ Login successful, waiting for redirect...");
       clearTimeout(timeoutId);
-      
+
       // La redirección se maneja en el useEffect que escucha user y perfil
-      
     } catch (err) {
       clearTimeout(timeoutId);
       console.error("❌ Login failed:", err);
-      setError(err.message || "Error al iniciar sesión. Verifica tus credenciales.");
+      setError(
+        err.message || "Error al iniciar sesión. Verifica tus credenciales."
+      );
       setLoading(false);
     }
   };
@@ -78,6 +121,32 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
+            {/* ✅ NUEVO: Select de Plazas */}
+            <div className="relative">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Selecciona tu Plaza
+              </label>
+              <select
+                value={plazaId}
+                onChange={(e) => setPlazaId(e.target.value)}
+                disabled={loading || loadingPlazas}
+                required
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 bg-gray-50 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {loadingPlazas ? "Cargando plazas..." : "-- Selecciona una plaza --"}
+                </option>
+                {plazas.map((plaza) => (
+                  <option key={plaza.id} value={plaza.id}>
+                    {plaza.nombre} - {plaza.ciudad}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Debes ser usuario de la plaza seleccionada
+              </p>
+            </div>
+
             <div className="relative">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Correo Electrónico
@@ -127,14 +196,30 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || loadingPlazas}
               className="w-full bg-gradient-to-r from-blue-600 to-purple-700 text-white font-bold py-4 rounded-xl hover:from-blue-700 hover:to-purple-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   <span>Iniciando sesión...</span>
                 </>
