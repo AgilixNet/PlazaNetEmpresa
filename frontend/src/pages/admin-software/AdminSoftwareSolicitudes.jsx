@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Layout from "../../components/common/Layout";
 import { solicitudesService } from "../../services/solicitudesService";
+import { axiosClient } from "../../axiosClient";
 import { 
   Check, 
   X, 
@@ -26,16 +27,29 @@ const ESTADO_BADGES = {
   rechazada: 'bg-red-100 text-red-800'
 };
 
+const ESTADOS = {
+  TODOS: 'todos',
+  PENDIENTE: 'pendiente',
+  APROBADA: 'aprobada',
+  RECHAZADA: 'rechazada'
+};
+
 export default function AdminSoftwareSolicitudes() {
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [solicitudDetalle, setSolicitudDetalle] = useState(null);
   const [showDetalleModal, setShowDetalleModal] = useState(false);
+  const [filtroEstado, setFiltroEstado] = useState(ESTADOS.TODOS);
 
   useEffect(() => {
     cargarSolicitudes();
   }, []);
+
+  const solicitudesFiltradas = useMemo(() => {
+    if (filtroEstado === ESTADOS.TODOS) return solicitudes;
+    return solicitudes.filter(s => s.estado === filtroEstado);
+  }, [solicitudes, filtroEstado]);
 
   const cargarSolicitudes = async () => {
     try {
@@ -62,9 +76,12 @@ export default function AdminSoftwareSolicitudes() {
     }
   };
 
-  const handleActualizarEstado = async (id, nuevoEstado) => {
+  const handleActualizarEstado = async (id, nuevoEstado, comentario = '') => {
     try {
-      await solicitudesService.update(id, { estado: nuevoEstado });
+      await solicitudesService.update(id, { 
+        estado: nuevoEstado,
+        comentarioAdmin: comentario || getComentarioPorEstado(nuevoEstado)
+      });
       // Actualizar la lista de solicitudes
       await cargarSolicitudes();
       // Si el modal está abierto, actualizar también el detalle
@@ -74,7 +91,55 @@ export default function AdminSoftwareSolicitudes() {
       }
     } catch (err) {
       console.error("Error actualizando estado:", err);
-      // Mostrar error en un toast o alert
+      alert("Error al actualizar el estado de la solicitud. Por favor, intenta de nuevo.");
+    }
+  };
+
+  const getComentarioPorEstado = (estado) => {
+    switch (estado) {
+      case 'aprobada':
+        return 'Solicitud aprobada. Se enviará un correo con los detalles de acceso.';
+      case 'rechazada':
+        return 'Solicitud rechazada. Para más información, contacte con soporte.';
+      default:
+        return '';
+    }
+  };
+
+  const handleDownloadFile = async (fileUrl, defaultFilename) => {
+    try {
+      // Si la URL ya es completa (comienza con http:// o https://), usarla directamente
+      const url = fileUrl.startsWith('http') ? fileUrl : `${axiosClient.defaults.baseURL}/api/files/${fileUrl}`;
+      
+      const response = await axiosClient.get(url, {
+        responseType: 'blob',
+      });
+      
+      // Crear un objeto URL para el blob
+      const blob = new Blob([response.data], { 
+        type: response.headers['content-type'] || 'application/octet-stream' 
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      // Obtener el nombre del archivo de las cabeceras o usar el predeterminado
+      const contentDisposition = response.headers['content-disposition'];
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1].replace(/['"]/g, '')
+        : defaultFilename;
+      
+      // Crear un elemento <a> temporal para la descarga
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Liberar el objeto URL
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error al descargar el archivo:', error);
+      alert('Error al descargar el archivo. Por favor, intenta de nuevo.');
     }
   };
 
@@ -154,50 +219,63 @@ export default function AdminSoftwareSolicitudes() {
                 <h4 className="text-lg font-semibold mb-4">Documentos Adjuntos</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {solicitud.cedulaUrl && (
-                    <a
-                      href={solicitud.cedulaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => handleDownloadFile(solicitud.cedulaUrl, 'cedula.pdf')}
                       className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <FileText className="h-5 w-5 text-blue-600 mr-2" />
-                      <span>Ver Cédula</span>
-                    </a>
+                      <span>Ver/Descargar Cédula</span>
+                    </button>
                   )}
                   {solicitud.rutUrl && (
-                    <a
-                      href={solicitud.rutUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => handleDownloadFile(solicitud.rutUrl, 'rut.pdf')}
                       className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <FileCheck className="h-5 w-5 text-blue-600 mr-2" />
-                      <span>Ver RUT</span>
-                    </a>
+                      <span>Ver/Descargar RUT</span>
+                    </button>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Botones de acción */}
-            {solicitud.estado === 'pendiente' && (
-              <div className="flex gap-3 mt-6 pt-6 border-t">
-                <button
-                  onClick={() => handleActualizarEstado(solicitud.id, 'aprobada')}
-                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Check className="h-5 w-5" />
-                  Aprobar
-                </button>
-                <button
-                  onClick={() => handleActualizarEstado(solicitud.id, 'rechazada')}
-                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <X className="h-5 w-5" />
-                  Rechazar
-                </button>
-              </div>
-            )}
+            <div className="flex gap-3 mt-6 pt-6 border-t">
+              <button
+                onClick={() => handleActualizarEstado(solicitud.id, 'pendiente')}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2
+                  ${solicitud.estado === 'pendiente' 
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-yellow-600 text-white hover:bg-yellow-700'}`}
+                disabled={solicitud.estado === 'pendiente'}
+              >
+                <span className="w-3 h-3 rounded-full bg-yellow-300"></span>
+                Marcar Pendiente
+              </button>
+              <button
+                onClick={() => handleActualizarEstado(solicitud.id, 'aprobada')}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2
+                  ${solicitud.estado === 'aprobada'
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 text-white hover:bg-green-700'}`}
+                disabled={solicitud.estado === 'aprobada'}
+              >
+                <Check className="h-5 w-5" />
+                Aprobar
+              </button>
+              <button
+                onClick={() => handleActualizarEstado(solicitud.id, 'rechazada')}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2
+                  ${solicitud.estado === 'rechazada'
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-red-600 text-white hover:bg-red-700'}`}
+                disabled={solicitud.estado === 'rechazada'}
+              >
+                <X className="h-5 w-5" />
+                Rechazar
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -227,6 +305,55 @@ export default function AdminSoftwareSolicitudes() {
           </div>
         )}
 
+        {/* Resumen de Solicitudes */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div 
+            onClick={() => setFiltroEstado(ESTADOS.TODOS)}
+            className={`cursor-pointer rounded-xl shadow-sm p-4 ${
+              filtroEstado === ESTADOS.TODOS ? 'bg-blue-50 border-2 border-blue-500' : 'bg-white border border-gray-200'
+            }`}
+          >
+            <p className="text-sm text-gray-500">Total Solicitudes</p>
+            <p className="text-2xl font-bold text-gray-900">{solicitudes.length}</p>
+          </div>
+          
+          <div 
+            onClick={() => setFiltroEstado(ESTADOS.PENDIENTE)}
+            className={`cursor-pointer rounded-xl shadow-sm p-4 ${
+              filtroEstado === ESTADOS.PENDIENTE ? 'bg-yellow-50 border-2 border-yellow-500' : 'bg-white border border-gray-200'
+            }`}
+          >
+            <p className="text-sm text-gray-500">Pendientes</p>
+            <p className="text-2xl font-bold text-yellow-600">
+              {solicitudes.filter(s => s.estado === 'pendiente').length}
+            </p>
+          </div>
+          
+          <div 
+            onClick={() => setFiltroEstado(ESTADOS.APROBADA)}
+            className={`cursor-pointer rounded-xl shadow-sm p-4 ${
+              filtroEstado === ESTADOS.APROBADA ? 'bg-green-50 border-2 border-green-500' : 'bg-white border border-gray-200'
+            }`}
+          >
+            <p className="text-sm text-gray-500">Aprobadas</p>
+            <p className="text-2xl font-bold text-green-600">
+              {solicitudes.filter(s => s.estado === 'aprobada').length}
+            </p>
+          </div>
+          
+          <div 
+            onClick={() => setFiltroEstado(ESTADOS.RECHAZADA)}
+            className={`cursor-pointer rounded-xl shadow-sm p-4 ${
+              filtroEstado === ESTADOS.RECHAZADA ? 'bg-red-50 border-2 border-red-500' : 'bg-white border border-gray-200'
+            }`}
+          >
+            <p className="text-sm text-gray-500">Rechazadas</p>
+            <p className="text-2xl font-bold text-red-600">
+              {solicitudes.filter(s => s.estado === 'rechazada').length}
+            </p>
+          </div>
+        </div>
+
         {/* Tabla de Solicitudes */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
@@ -254,7 +381,7 @@ export default function AdminSoftwareSolicitudes() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {solicitudes.map((solicitud) => (
+                {solicitudesFiltradas.map((solicitud) => (
                   <tr key={solicitud.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(solicitud.createdAt).toLocaleDateString('es-CO')}
@@ -278,32 +405,53 @@ export default function AdminSoftwareSolicitudes() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-3">
-                        <button
-                          onClick={() => handleVerDetalle(solicitud.id)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
-                          title="Ver detalle"
-                        >
-                          <Eye className="h-5 w-5" />
-                        </button>
-                        
-                        {solicitud.estado === 'pendiente' && (
-                          <>
+                        <div className="relative group">
+                          <button
+                            onClick={() => handleVerDetalle(solicitud.id)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded-full hover:bg-blue-50"
+                            title="Ver detalle"
+                          >
+                            <Eye className="h-5 w-5" />
+                          </button>
+
+                          <button
+                            onClick={() => handleActualizarEstado(solicitud.id, 'aprobada')}
+                            className={`p-1 rounded-full transition-colors ${
+                              solicitud.estado === 'aprobada' 
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-green-600 hover:text-green-900 hover:bg-green-50'
+                            }`}
+                            title="Aprobar"
+                            disabled={solicitud.estado === 'aprobada'}
+                          >
+                            <Check className="h-5 w-5" />
+                          </button>
+
+                          <button
+                            onClick={() => handleActualizarEstado(solicitud.id, 'rechazada')}
+                            className={`p-1 rounded-full transition-colors ${
+                              solicitud.estado === 'rechazada'
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-red-600 hover:text-red-900 hover:bg-red-50'
+                            }`}
+                            title="Rechazar"
+                            disabled={solicitud.estado === 'rechazada'}
+                          >
+                            <X className="h-5 w-5" />
+                          </button>
+
+                          {solicitud.estado !== 'pendiente' && (
                             <button
-                              onClick={() => handleActualizarEstado(solicitud.id, 'aprobada')}
-                              className="text-green-600 hover:text-green-900 transition-colors"
-                              title="Aprobar"
+                              onClick={() => handleActualizarEstado(solicitud.id, 'pendiente')}
+                              className="p-1 rounded-full text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 transition-colors"
+                              title="Marcar como pendiente"
                             >
-                              <Check className="h-5 w-5" />
+                              <div className="h-5 w-5 flex items-center justify-center">
+                                <span className="block w-3 h-3 rounded-full bg-yellow-400"></span>
+                              </div>
                             </button>
-                            <button
-                              onClick={() => handleActualizarEstado(solicitud.id, 'rechazada')}
-                              className="text-red-600 hover:text-red-900 transition-colors"
-                              title="Rechazar"
-                            >
-                              <X className="h-5 w-5" />
-                            </button>
-                          </>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
