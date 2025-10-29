@@ -2,48 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Building2, Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
-import { supabase } from "../supabaseClient";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [plazaId, setPlazaId] = useState(""); // ✅ NUEVO
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [plazas, setPlazas] = useState([]); // ✅ NUEVO
-  const [loadingPlazas, setLoadingPlazas] = useState(true); // ✅ NUEVO
   const navigate = useNavigate();
   const { signIn, user, perfil } = useAuth();
-
-  // ✅ NUEVO: Cargar plazas desde la BD al montar el componente
-  useEffect(() => {
-    cargarPlazas();
-  }, []);
-
-  const cargarPlazas = async () => {
-    try {
-      console.log("📍 Cargando plazas desde BD...");
-      const { data, error } = await supabase
-        .from("plazas")
-        .select("id, nombre, ciudad")
-        .eq("estado", "activa")
-        .order("nombre", { ascending: true });
-
-      if (error) {
-        console.error("❌ Error cargando plazas:", error);
-        setError("Error al cargar las plazas disponibles");
-        return;
-      }
-
-      console.log("✅ Plazas cargadas:", data);
-      setPlazas(data || []);
-    } catch (err) {
-      console.error("❌ Exception al cargar plazas:", err);
-      setError("Error al conectar con el servidor");
-    } finally {
-      setLoadingPlazas(false);
-    }
-  };
 
   // Si ya hay un usuario autenticado y perfil cargado, redirigir al dashboard
   useEffect(() => {
@@ -57,12 +23,6 @@ export default function Login() {
     e.preventDefault();
 
     if (loading) return;
-
-    // ✅ NUEVO: Validar que plaza esté seleccionada
-    if (!plazaId) {
-      setError("Por favor selecciona una plaza");
-      return;
-    }
 
     setError("");
     setLoading(true);
@@ -78,8 +38,7 @@ export default function Login() {
     try {
       console.log("🔐 Starting login process...");
 
-      // ✅ NUEVO: Pasar plaza_id a signIn
-      await signIn(email, password, plazaId);
+      await signIn(email, password);
 
       console.log("✅ Login successful, waiting for redirect...");
       clearTimeout(timeoutId);
@@ -121,32 +80,6 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
-            {/* ✅ NUEVO: Select de Plazas */}
-            <div className="relative">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Selecciona tu Plaza
-              </label>
-              <select
-                value={plazaId}
-                onChange={(e) => setPlazaId(e.target.value)}
-                disabled={loading || loadingPlazas}
-                required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 bg-gray-50 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option value="">
-                  {loadingPlazas ? "Cargando plazas..." : "-- Selecciona una plaza --"}
-                </option>
-                {plazas.map((plaza) => (
-                  <option key={plaza.id} value={plaza.id}>
-                    {plaza.nombre} - {plaza.ciudad}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Debes ser usuario de la plaza seleccionada
-              </p>
-            </div>
-
             <div className="relative">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Correo Electrónico
@@ -196,7 +129,7 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={loading || loadingPlazas}
+              disabled={loading}
               className="w-full bg-gradient-to-r from-blue-600 to-purple-700 text-white font-bold py-4 rounded-xl hover:from-blue-700 hover:to-purple-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
               {loading ? (

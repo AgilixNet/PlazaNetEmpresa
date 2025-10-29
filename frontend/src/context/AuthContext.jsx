@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [perfil, setPerfil] = useState(null);
-  const [plaza, setPlaza] = useState(null); // ✅ NUEVO: Almacenar plaza
+  const [plaza, setPlaza] = useState(null); // Almacenar plaza del usuario
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }) => {
     if (!userId) {
       console.warn('⚠️ No userId provided to fetchPerfil');
       setPerfil(null);
-      setPlaza(null); // ✅ NUEVO
+      setPlaza(null);
       setLoading(false);
       return;
     }
@@ -139,23 +139,33 @@ export const AuthProvider = ({ children }) => {
       
       console.log('✅ Perfil obtenido:', data);
       setPerfil(data);
-      setPlaza(data.plaza_id); // ✅ NUEVO: Guardar plaza del perfil
+      setPlaza(data.plaza_id);
       setError(null);
       setLoading(false);
+
+      // Redirigir al dashboard correcto si es un login reciente
+      if (user) {
+        const dashboardUrl = RUTAS_POR_ROL[data.rol];
+        console.log(`🔀 Redirigiendo a: ${dashboardUrl}`);
+        
+        setTimeout(() => {
+          navigate(dashboardUrl, { replace: true });
+        }, 500);
+      }
 
     } catch (error) {
       console.error('❌ Exception in fetchPerfil:', error);
       setError(error.message);
       setPerfil(null);
-      setPlaza(null); // ✅ NUEVO
+      setPlaza(null);
       setLoading(false);
     }
   };
 
-  // ✅ NUEVO: signIn mejorado con validación de plaza
-  const signIn = async (email, password, plazaSeleccionada) => {
+  // Función simplificada de signIn
+  const signIn = async (email, password) => {
     try {
-      console.log('🔐 Attempting login:', email, 'Plaza:', plazaSeleccionada);
+      console.log('🔐 Attempting login:', email);
       setError(null);
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -174,68 +184,12 @@ export const AuthProvider = ({ children }) => {
       if (data.user) {
         setUser(data.user);
         // Fetch perfil
-        await fetchPerfilYValidarPlaza(data.user.id, plazaSeleccionada);
+        await fetchPerfil(data.user.id);
       }
       
       return data;
     } catch (error) {
       console.error('❌ SignIn exception:', error);
-      throw error;
-    }
-  };
-
-  // ✅ NUEVO: Función para validar que la plaza coincida
-  const fetchPerfilYValidarPlaza = async (userId, plazaSeleccionada) => {
-    try {
-      console.log('🔍 Validando plaza del usuario...');
-      
-      const { data, error } = await supabase
-        .from('perfiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('❌ Error fetching perfil:', error);
-        await signOut();
-        throw new Error('Perfil de usuario no encontrado');
-      }
-
-      if (!data) {
-        await signOut();
-        throw new Error('Perfil no encontrado');
-      }
-
-      // ✅ VERIFICAR QUE LA PLAZA COINCIDA
-      if (data.plaza_id !== plazaSeleccionada) {
-        console.error(
-          `❌ Plaza no coincide. Perfil: ${data.plaza_id}, Seleccionada: ${plazaSeleccionada}`
-        );
-        await signOut();
-        throw new Error(
-          'La plaza seleccionada no coincide con tu usuario. Por favor verifica.'
-        );
-      }
-
-      console.log('✅ Plaza verificada correctamente');
-      
-      setPerfil(data);
-      setPlaza(data.plaza_id);
-      setError(null);
-
-      // ✅ Redirigir al dashboard correcto
-      const dashboardUrl = RUTAS_POR_ROL[data.rol];
-      console.log(`🔀 Redirigiendo a: ${dashboardUrl}`);
-      
-      setTimeout(() => {
-        navigate(dashboardUrl, { replace: true });
-      }, 500);
-
-    } catch (error) {
-      console.error('❌ Error en validación de plaza:', error);
-      setError(error.message);
-      setPerfil(null);
-      setPlaza(null);
       throw error;
     }
   };
