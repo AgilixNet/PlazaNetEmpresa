@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// URL base de tu API
-const API_URL = 'https://neriah-burriest-sentiently.ngrok-free.dev';
+// URL base de tu API (leer de env con respaldo al valor actual)
+const API_URL = (import.meta?.env?.VITE_API_URL) || 'https://neriah-burriest-sentiently.ngrok-free.dev';
 
 // Crear una instancia de Axios
 const axiosClient = axios.create({
