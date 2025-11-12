@@ -3,8 +3,14 @@ import { axiosClient } from '../axiosClient';
 export const solicitudesService = {
   // Obtener todas las solicitudes
   async getAll() {
-    const { data } = await axiosClient.get('/api/solicitudes');
-    return data;
+    try {
+      const { data } = await axiosClient.get('/api/solicitudes');
+      // Asegurar que siempre retornamos un array
+      return Array.isArray(data) ? data : (data?.solicitudes || []);
+    } catch (error) {
+      console.error('Error en solicitudesService.getAll:', error);
+      return []; // Retornar array vacío en caso de error
+    }
   },
 
   // Obtener una solicitud por ID
