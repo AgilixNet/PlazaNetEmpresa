@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { axiosClient } from '../axiosClient';
 import { ShoppingCart, Users, BarChart3, Package, CheckCircle, Menu, X, ArrowRight, Zap, Shield, TrendingUp, Upload, FileText, CheckCircle2 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -219,20 +220,8 @@ export default function LandingPage() {
 
     console.log('Enviando datos:', solicitudData);
 
-    const response = await fetch('http://localhost:5000/api/solicitudes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(solicitudData)  // Enviar el objeto JSON
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`Error ${response.status}: ${errorData}`);
-    }
-
-    const data = await response.json();
+    // Usar axiosClient que ya tiene configurada la URL de ngrok
+    const { data } = await axiosClient.post('/api/solicitudes', solicitudData);
     console.log('Respuesta del servidor:', data);
 
     setSuccess(true);
