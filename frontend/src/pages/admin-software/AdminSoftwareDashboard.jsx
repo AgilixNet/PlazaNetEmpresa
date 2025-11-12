@@ -45,33 +45,37 @@ export default function AdminSoftwareDashboard() {
         })
       ]);
 
+      // Asegurar que los datos sean arrays
+      const usuarios = Array.isArray(usuariosData) ? usuariosData : [];
+      const solicitudes = Array.isArray(solicitudesData) ? solicitudesData : [];
+
       // Estadísticas de usuarios
       const usuariosStats = {
-        total: usuariosData.length,
-        owners: usuariosData.filter(u => u.rol === 'Owner').length,
-        adminPlaza: usuariosData.filter(u => u.rol === 'AdminPlaza').length,
-        adminParqueadero: usuariosData.filter(u => u.rol === 'ParkingAdmin').length,
-        arrendadores: usuariosData.filter(u => u.rol === 'Arrendador').length,
-        adminSoftware: usuariosData.filter(u => u.rol === 'AdminSoftware').length
+        total: usuarios.length,
+        owners: usuarios.filter(u => u.rol === 'Owner').length,
+        adminPlaza: usuarios.filter(u => u.rol === 'AdminPlaza').length,
+        adminParqueadero: usuarios.filter(u => u.rol === 'ParkingAdmin').length,
+        arrendadores: usuarios.filter(u => u.rol === 'Arrendador').length,
+        adminSoftware: usuarios.filter(u => u.rol === 'AdminSoftware').length
       };
 
       // Estadísticas de solicitudes
       const solicitudesStats = {
-        total: solicitudesData.length,
-        pendientes: solicitudesData.filter(s => s.estado === 'pendiente').length,
-        aprobadas: solicitudesData.filter(s => s.estado === 'aprobada').length,
-        rechazadas: solicitudesData.filter(s => s.estado === 'rechazada').length
+        total: solicitudes.length,
+        pendientes: solicitudes.filter(s => s.estado === 'pendiente').length,
+        aprobadas: solicitudes.filter(s => s.estado === 'aprobada').length,
+        rechazadas: solicitudes.filter(s => s.estado === 'rechazada').length
       };
 
       // Crecimiento (últimos 7 días)
       const hace7dias = new Date();
       hace7dias.setDate(hace7dias.getDate() - 7);
 
-      const usuariosNuevos7dias = usuariosData.filter(u => 
+      const usuariosNuevos7dias = usuarios.filter(u => 
         u.created_at && new Date(u.created_at) >= hace7dias
       ).length;
 
-      const solicitudesNuevas7dias = solicitudesData.filter(s => 
+      const solicitudesNuevas7dias = solicitudes.filter(s => 
         s.createdAt && new Date(s.createdAt) >= hace7dias
       ).length;
 
