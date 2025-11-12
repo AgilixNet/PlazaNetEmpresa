@@ -205,7 +205,7 @@ export const AuthProvider = ({ children }) => {
       setPlaza(null); // ✅ NUEVO
       setError(null);
       
-      navigate('/login', { replace: true });
+      navigate('/', { replace: true }); // Redirigir a la pantalla principal
       
       console.log('✅ Signed out successfully');
     } catch (error) {

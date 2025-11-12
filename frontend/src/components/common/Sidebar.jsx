@@ -37,7 +37,7 @@ export default function Sidebar() {
   const handleLogout = async () => {
     try {
       await signOut();
-      window.location.href = '/login';
+      // signOut ya maneja la redirección a '/'
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     }

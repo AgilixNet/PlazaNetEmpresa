@@ -29,7 +29,7 @@ export default function Dashboard() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/login";
+    window.location.href = "/"; // Redirigir a la pantalla principal
   };
 
   const getEstadoColor = (estado) => {
