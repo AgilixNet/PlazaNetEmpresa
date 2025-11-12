@@ -14,3 +14,19 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+---
+
+## Admin Software – Gestión de Usuarios
+
+Ruta: `/admin-software/usuarios`
+
+- Ver todos los usuarios (tabla con nombre, correo, rol, plaza y fecha de creación)
+- Filtrar por plaza (usa los valores definidos en `src/utils/constants.js` → `PLAZAS`)
+- Buscar por nombre, correo o rol
+- Cambiar rol directamente desde la tabla
+- Restablecer contraseña: envía un correo de recuperación usando Supabase Auth
+
+Notas:
+- El restablecimiento de contraseña envía un email al usuario (no cambia la contraseña directamente). Requiere que el perfil tenga `correo`/`email`.
+- El campo "Plaza" se obtiene de `perfil.plaza | perfil.plazaNombre | perfil.nombrePlaza | perfil.plaza_id`. Si no existe, se muestra "Sin plaza".

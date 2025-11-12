@@ -31,6 +31,15 @@ export const authService = {
     return user;
   },
 
+  // Enviar correo de restablecimiento de contraseña
+  async resetPassword(email) {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/login'
+    });
+    if (error) throw error;
+    return data;
+  },
+
   // Obtener perfil del usuario
   async getPerfil(userId) {
     const { data, error } = await supabase

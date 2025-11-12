@@ -132,6 +132,7 @@ export const NAVEGACION = {
   ],
   [ROLES.ADMIN_SOFTWARE]: [
     { nombre: 'Dashboard', ruta: '/admin-software/dashboard', icono: 'LayoutDashboard' },
+    { nombre: 'Usuarios', ruta: '/admin-software/usuarios', icono: 'Users' },
     { nombre: 'Solicitudes', ruta: '/admin-software/solicitudes', icono: 'FileText' }
   ],
   [ROLES.ARRENDADOR]: [

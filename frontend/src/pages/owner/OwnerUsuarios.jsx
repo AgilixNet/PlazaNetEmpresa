@@ -1,33 +1,59 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Layout from "../../components/common/Layout";
-import { Users, Plus, Edit, Trash2, Search, Filter } from "lucide-react";
+import { Users, Plus, Edit, Trash2, Search, KeyRound, X, Mail, Building2, Shield } from "lucide-react";
 import { perfilesService } from "../../services/perfilesService";
 import { authService } from "../../services/authService";
-import { ROLES } from "../../utils/constants";
+import { useAuth } from "../../context/AuthContext";
+import { ROLES, PLAZAS } from "../../utils/constants";
+
+const ROLES_PERMITIDOS = [
+  { value: ROLES.ADMIN_PLAZA, label: 'Admin Plaza' },
+  { value: ROLES.ADMIN_PARQUEADERO, label: 'Admin Parqueadero' },
+  { value: ROLES.ARRENDADOR, label: 'Arrendador' }
+];
 
 export default function OwnerUsuarios() {
+  const { perfil, plaza } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroRol, setFiltroRol] = useState("todos");
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [workingId, setWorkingId] = useState(null);
   const [formData, setFormData] = useState({
     nombre: "",
-    email: "",
+    correo: "",
     password: "",
-    rol: ROLES.ARRENDADOR
+    telefono: "",
+    rol: ROLES.ARRENDADOR,
+    plaza_id: ""
   });
 
   useEffect(() => {
     loadUsuarios();
   }, []);
 
+  const plazaNombre = useMemo(() => {
+    if (!plaza) return "Sin plaza";
+    const plazaEncontrada = Object.values(PLAZAS).find(p => 
+      p.nombre.toLowerCase() === plaza.toLowerCase() ||
+      plaza.toLowerCase().includes(p.nombre.toLowerCase())
+    );
+    return plazaEncontrada ? plazaEncontrada.nombre : plaza;
+  }, [plaza]);
+
   const loadUsuarios = async () => {
     try {
       setLoading(true);
       const data = await perfilesService.getAll();
-      setUsuarios(data);
+      // Filtrar solo usuarios de la plaza del owner
+      const usuariosDePlaza = data.filter(u => {
+        if (!plaza) return false;
+        const userPlaza = u.plaza_id || u.plaza;
+        return userPlaza && userPlaza.toLowerCase() === plaza.toLowerCase();
+      });
+      setUsuarios(usuariosDePlaza);
     } catch (error) {
       console.error("Error cargando usuarios:", error);
       alert("Error al cargar usuarios");

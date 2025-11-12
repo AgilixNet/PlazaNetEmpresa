@@ -18,6 +18,7 @@ import OwnerReportes from "./pages/owner/OwnerReportes";
 // Admin Software Pages
 import AdminSoftwareDashboard from "./pages/admin-software/AdminSoftwareDashboard";
 import AdminSoftwareSolicitudes from "./pages/admin-software/AdminSoftwareSolicitudes";
+import AdminSoftwareUsuarios from "./pages/admin-software/AdminSoftwareUsuarios";
 
 // Componente de carga global
 function LoadingScreen() {
@@ -112,6 +113,16 @@ function AppRoutes() {
           <PrivateRoute>
             <RoleRoute rolesPermitidos={[ROLES.ADMIN_SOFTWARE]}>
               <AdminSoftwareSolicitudes />
+            </RoleRoute>
+          </PrivateRoute>
+        } 
+      />
+      <Route 
+        path="/admin-software/usuarios" 
+        element={
+          <PrivateRoute>
+            <RoleRoute rolesPermitidos={[ROLES.ADMIN_SOFTWARE]}>
+              <AdminSoftwareUsuarios />
             </RoleRoute>
           </PrivateRoute>
         } 
